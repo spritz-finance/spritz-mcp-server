@@ -77,6 +77,79 @@ export function indexOperations(
 }
 
 /**
+ * Merge properties and required from a body schema into the accumulator.
+ * Handles plain object schemas and anyOf/oneOf by collecting the union of
+ * all variant properties and the intersection of their required arrays.
+ */
+function mergeBodySchema(
+  schema: Record<string, unknown>,
+  properties: Record<string, unknown>,
+  required: string[],
+): void {
+  const variants = (schema["anyOf"] ?? schema["oneOf"]) as
+    | Record<string, unknown>[]
+    | undefined;
+
+  if (variants && Array.isArray(variants)) {
+    // Collect all definitions per property across variants
+    const propDefs = new Map<string, Record<string, unknown>[]>();
+    const requiredSets: Set<string>[] = [];
+
+    for (const variant of variants) {
+      if (typeof variant !== "object" || variant === null) continue;
+      const variantProps = variant["properties"] as Record<string, unknown> | undefined;
+      if (variantProps) {
+        for (const [key, value] of Object.entries(variantProps)) {
+          if (!propDefs.has(key)) propDefs.set(key, []);
+          propDefs.get(key)!.push(value as Record<string, unknown>);
+        }
+      }
+      const variantRequired = variant["required"] as string[] | undefined;
+      requiredSets.push(new Set(variantRequired ?? []));
+    }
+
+    // Merge property definitions
+    for (const [key, defs] of propDefs) {
+      // Collect const values across variants for this property
+      const constValues = defs
+        .map((d) => d["const"])
+        .filter((v) => v !== undefined);
+
+      if (constValues.length > 1) {
+        // Multiple const values → merge into enum
+        const { const: _, ...base } = defs[0];
+        properties[key] = { ...base, enum: constValues };
+      } else {
+        properties[key] = defs[0];
+      }
+    }
+
+    // Only require fields that every variant requires
+    if (requiredSets.length > 0) {
+      const intersection = [...requiredSets[0]].filter((key) =>
+        requiredSets.every((s) => s.has(key)),
+      );
+      required.push(...intersection);
+    }
+    return;
+  }
+
+  // Plain object schema with top-level properties
+  if ("properties" in schema) {
+    const bodyProps = schema["properties"] as Record<string, unknown> | undefined;
+    if (bodyProps) {
+      for (const [key, value] of Object.entries(bodyProps)) {
+        properties[key] = value;
+      }
+    }
+    const bodyRequired = schema["required"] as string[] | undefined;
+    if (bodyRequired) {
+      required.push(...bodyRequired);
+    }
+  }
+}
+
+/**
  * Build a JSON Schema inputSchema for an MCP tool from an OpenAPI operation.
  *
  * Merges path params, query params, and request body into a single flat object schema.
@@ -100,17 +173,8 @@ export function buildInputSchema(op: OpenAPIOperation): Record<string, unknown> 
 
   // Request body (JSON only)
   const bodySchema = op.requestBody?.content?.["application/json"]?.schema;
-  if (bodySchema && typeof bodySchema === "object" && "properties" in bodySchema) {
-    const bodyProps = bodySchema["properties"] as Record<string, unknown> | undefined;
-    if (bodyProps) {
-      for (const [key, value] of Object.entries(bodyProps)) {
-        properties[key] = value;
-      }
-    }
-    const bodyRequired = bodySchema["required"] as string[] | undefined;
-    if (bodyRequired) {
-      required.push(...bodyRequired);
-    }
+  if (bodySchema && typeof bodySchema === "object") {
+    mergeBodySchema(bodySchema, properties, required);
   }
 
   return {

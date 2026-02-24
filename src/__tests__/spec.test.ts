@@ -242,7 +242,118 @@ describe("buildInputSchema", () => {
     expect(Object.keys(props)).toEqual(["id"]);
   });
 
-  it("handles body without properties (e.g. anyOf schema)", () => {
+  it("merges anyOf variants: union of properties, intersection of required", () => {
+    const op: OpenAPIOperation = {
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              anyOf: [
+                {
+                  type: "object",
+                  properties: {
+                    type: { type: "string" },
+                    name: { type: "string" },
+                    routing_number: { type: "string" },
+                  },
+                  required: ["type", "name", "routing_number"],
+                },
+                {
+                  type: "object",
+                  properties: {
+                    type: { type: "string" },
+                    name: { type: "string" },
+                    iban: { type: "string" },
+                  },
+                  required: ["type", "name", "iban"],
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    const schema = buildInputSchema(op);
+    const props = (schema as { properties: Record<string, unknown> }).properties;
+    const req = (schema as { required: string[] }).required;
+
+    // Union of all properties
+    expect(Object.keys(props).sort()).toEqual(["iban", "name", "routing_number", "type"]);
+    // Only fields required by ALL variants
+    expect(req.sort()).toEqual(["name", "type"]);
+  });
+
+  it("merges const values across anyOf variants into enum", () => {
+    const op: OpenAPIOperation = {
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              anyOf: [
+                {
+                  type: "object",
+                  properties: {
+                    type: { const: "us", type: "string", description: "Account type" },
+                    name: { type: "string" },
+                  },
+                  required: ["type", "name"],
+                },
+                {
+                  type: "object",
+                  properties: {
+                    type: { const: "iban", type: "string", description: "Account type" },
+                    name: { type: "string" },
+                  },
+                  required: ["type", "name"],
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    const schema = buildInputSchema(op);
+    const props = (schema as { properties: Record<string, unknown> }).properties;
+    const typeField = props["type"] as Record<string, unknown>;
+
+    expect(typeField["enum"]).toEqual(["us", "iban"]);
+    expect(typeField["const"]).toBeUndefined();
+    expect(typeField["description"]).toBe("Account type");
+    expect(typeField["type"]).toBe("string");
+  });
+
+  it("handles oneOf the same as anyOf", () => {
+    const op: OpenAPIOperation = {
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              oneOf: [
+                {
+                  type: "object",
+                  properties: { a: { type: "string" } },
+                  required: ["a"],
+                },
+                {
+                  type: "object",
+                  properties: { a: { type: "string" }, b: { type: "string" } },
+                  required: ["a", "b"],
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    const schema = buildInputSchema(op);
+    const props = (schema as { properties: Record<string, unknown> }).properties;
+    const req = (schema as { required: string[] }).required;
+
+    expect(Object.keys(props).sort()).toEqual(["a", "b"]);
+    expect(req).toEqual(["a"]);
+  });
+
+  it("handles anyOf variants without properties gracefully", () => {
     const op: OpenAPIOperation = {
       requestBody: {
         content: {

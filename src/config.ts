@@ -20,4 +20,9 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     operationId: "getV1Bank-accounts",
     description: "List all bank accounts saved as off-ramp payment destinations.",
   },
+  {
+    name: "create_bank_account",
+    operationId: "postV1Bank-accounts",
+    description: "Add a new bank account as an off-ramp destination. The `type` field determines required fields: us (routing_number, account_number), ca (institution_number, transit_number, account_number), uk (sort_code, account_number), iban (iban, optional bic).",
+  },
 ];
