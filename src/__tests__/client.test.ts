@@ -69,6 +69,76 @@ describe("SpritzClient", () => {
     expect(opts.headers["Content-Type"]).toBe("application/json");
   });
 
+  it("sets User-Agent header", async () => {
+    const fetch = mockFetch(200, { ok: true });
+    globalThis.fetch = fetch;
+
+    const client = new SpritzClient();
+    await client.request("GET", "/v1/test");
+
+    const [, opts] = fetch.mock.calls[0];
+    expect(opts.headers["User-Agent"]).toMatch(/^spritz-mcp-server\//);
+  });
+
+  it("sets Origin header", async () => {
+    const fetch = mockFetch(200, { ok: true });
+    globalThis.fetch = fetch;
+
+    const client = new SpritzClient();
+    await client.request("GET", "/v1/test");
+
+    const [, opts] = fetch.mock.calls[0];
+    expect(opts.headers.Origin).toBe("https://mcp.spritz.finance");
+  });
+
+  it("sets session-id header as UUID", async () => {
+    const fetch = mockFetch(200, { ok: true });
+    globalThis.fetch = fetch;
+
+    const client = new SpritzClient();
+    await client.request("GET", "/v1/test");
+
+    const [, opts] = fetch.mock.calls[0];
+    expect(opts.headers["session-id"]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("reuses same session-id across requests", async () => {
+    const fetch = mockFetch(200, { ok: true });
+    globalThis.fetch = fetch;
+
+    const client = new SpritzClient();
+    await client.request("GET", "/v1/a");
+    await client.request("GET", "/v1/b");
+
+    const id1 = fetch.mock.calls[0][1].headers["session-id"];
+    const id2 = fetch.mock.calls[1][1].headers["session-id"];
+    expect(id1).toBe(id2);
+  });
+
+  it("rotates session-id after 15 minutes", async () => {
+    const fetch = mockFetch(200, { ok: true });
+    globalThis.fetch = fetch;
+
+    const client = new SpritzClient();
+    await client.request("GET", "/v1/a");
+    const id1 = fetch.mock.calls[0][1].headers["session-id"];
+
+    vi.useFakeTimers();
+    vi.advanceTimersByTime(15 * 60 * 1000);
+
+    await client.request("GET", "/v1/b");
+    const id2 = fetch.mock.calls[1][1].headers["session-id"];
+
+    expect(id2).not.toBe(id1);
+    expect(id2).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+
+    vi.useRealTimers();
+  });
+
   it("makes GET request without body", async () => {
     const fetch = mockFetch(200, [{ id: "ba_1" }]);
     globalThis.fetch = fetch;
