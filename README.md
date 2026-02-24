@@ -4,13 +4,7 @@ MCP server for [Spritz](https://spritz.finance) fiat rails — let AI agents off
 
 ## What This Does
 
-An MCP (Model Context Protocol) server that gives AI agents tools to:
-
-- Add and manage bank account destinations
-- Create off-ramp payments (crypto → fiat)
-- Track payment status and history
-
-The agent sends crypto to a Spritz deposit address, and Spritz delivers USD to the specified bank account via ACH.
+An MCP (Model Context Protocol) server that gives AI agents tools to interact with the Spritz API. Tools are derived from the [OpenAPI spec](https://sandbox.spritz.finance/openapi/json) — no hand-written schemas.
 
 ## Installation
 
@@ -99,31 +93,37 @@ Add to `~/.cursor/mcp.json`:
 
 ## Available Tools
 
-### Bank Accounts
-
 | Tool | Description |
 |------|-------------|
-| `get_bank_accounts` | List all saved bank account destinations |
-| `get_bank_account` | Get details for a specific bank account |
-| `create_bank_account` | Add a new bank account destination |
-| `delete_bank_account` | Remove a bank account |
+| `list_bank_accounts` | List all bank accounts saved as off-ramp payment destinations |
 
-### Payments
+More tools coming soon.
 
-| Tool | Description |
-|------|-------------|
-| `create_payment` | Create an off-ramp payment (crypto → fiat) |
-| `get_payment` | Check payment status |
-| `get_payments` | List payment history |
+## Architecture
 
-## How It Works
+Tools are driven by the OpenAPI spec — not hand-written. To expose a new endpoint, add one entry to `src/config.ts`:
 
-1. Agent calls `create_payment` with USD amount, bank account, network, and token
-2. Spritz returns a deposit address and crypto amount
-3. Agent sends crypto to the deposit address (using its own wallet)
-4. Spritz converts and delivers fiat via ACH (1-3 business days)
+```ts
+export const EXPOSED_TOOLS: ToolConfig[] = [
+  {
+    name: "list_bank_accounts",
+    operationId: "getV1Bank-accounts",
+    description: "List all bank accounts saved as off-ramp payment destinations.",
+  },
+  // To add a new tool, just add another entry here.
+  // The inputSchema, HTTP method, and path are all derived from the OpenAPI spec.
+];
+```
 
-**Note:** The agent needs its own crypto wallet to send tokens. This server handles the Spritz API side only.
+The server reads `openapi.json`, finds each `operationId`, extracts the JSON Schema for parameters and request bodies, and registers them as MCP tools. A generic handler dispatches tool calls to the Spritz API.
+
+```
+openapi.json          → source of truth for request/response schemas
+src/config.ts         → which operations to expose (cherry-pick)
+src/spec.ts           → reads spec, builds MCP tool definitions
+src/handlers.ts       → generic dispatcher (path params, query, body)
+src/index.ts          → MCP server + API client
+```
 
 ## Development
 
@@ -132,6 +132,12 @@ npm install
 npm run dev          # Watch mode
 npm run build        # Build
 npm run inspector    # MCP inspector
+```
+
+### Updating the OpenAPI spec
+
+```bash
+curl -s https://sandbox.spritz.finance/openapi/json > openapi.json
 ```
 
 ## License
