@@ -1,0 +1,61 @@
+{
+  "name": "@spritz-finance/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Spritz fiat rails — off-ramp crypto to bank accounts with AI agents",
+  "type": "module",
+  "main": "build/src/index.js",
+  "bin": {
+    "spritz-mcp-server": "./build/src/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x build/src/index.js",
+    "dev": "tsc --watch",
+    "start": "node build/src/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector build/src/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spritz-finance/spritz-mcp-server.git"
+  },
+  "homepage": "https://github.com/spritz-finance/spritz-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/spritz-finance/spritz-mcp-server/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "spritz",
+    "fiat",
+    "off-ramp",
+    "bank-transfer",
+    "crypto",
+    "payments",
+    "claude",
+    "anthropic",
+    "ai-agent",
+    "ach"
+  ],
+  "author": "Spritz Finance <support@spritz.finance> (https://spritz.finance)",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "dotenv": "^17.2.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "build",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
