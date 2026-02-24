@@ -25,4 +25,9 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     operationId: "postV1Bank-accounts",
     description: "Add a new bank account as an off-ramp destination. The `type` field determines required fields: us (routing_number, account_number), ca (institution_number, transit_number, account_number), uk (sort_code, account_number), iban (iban, optional bic).",
   },
+  {
+    name: "delete_bank_account",
+    operationId: "deleteV1Bank-accountsByAccountId",
+    description: "Delete a bank account by ID.",
+  },
 ];
