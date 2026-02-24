@@ -1,6 +1,6 @@
 # Spritz MCP Server
 
-MCP server for [Spritz](https://spritz.finance) fiat rails — let AI agents off-ramp crypto to bank accounts.
+MCP server for [Spritz](https://www.spritz.finance) fiat rails — let AI agents off-ramp crypto to bank accounts.
 
 ## What This Does
 

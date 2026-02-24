@@ -20,7 +20,7 @@ export interface ResolvedOperation {
   summary: string;
 }
 
-interface OpenAPIOperation {
+export interface OpenAPIOperation {
   operationId?: string;
   summary?: string;
   description?: string;
@@ -30,7 +30,7 @@ interface OpenAPIOperation {
   };
 }
 
-interface OpenAPIParameter {
+export interface OpenAPIParameter {
   name: string;
   in: string;
   required?: boolean;
@@ -55,7 +55,7 @@ export function loadSpec(): Record<string, unknown> {
 /**
  * Walk every path+method in the spec and index by operationId.
  */
-function indexOperations(
+export function indexOperations(
   spec: Record<string, unknown>,
 ): Map<string, { method: string; path: string; op: OpenAPIOperation }> {
   const paths = spec["paths"] as Record<string, Record<string, unknown>> | undefined;
@@ -81,7 +81,7 @@ function indexOperations(
  *
  * Merges path params, query params, and request body into a single flat object schema.
  */
-function buildInputSchema(op: OpenAPIOperation): Record<string, unknown> {
+export function buildInputSchema(op: OpenAPIOperation): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 

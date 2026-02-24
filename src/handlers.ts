@@ -1,5 +1,5 @@
 import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
-import type { SpritzClient } from "./index.js";
+import type { SpritzClient } from "./client.js";
 import type { ResolvedOperation } from "./spec.js";
 
 /**
