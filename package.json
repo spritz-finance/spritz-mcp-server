@@ -5,7 +5,7 @@
   "type": "module",
   "main": "build/src/index.js",
   "bin": {
-    "spritz-mcp-server": "./build/src/index.js"
+    "spritz-mcp-server": "build/src/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
