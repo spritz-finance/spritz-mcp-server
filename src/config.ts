@@ -53,13 +53,13 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
   {
     name: "create_off_ramp_quote",
     operationId: "postV1Off-ramp-quotes",
-    description: `Create an off-ramp quote to convert crypto to fiat. Returns a quote with locked exchange rate, fees, and next steps.
+    description: `Create an off-ramp quote to convert crypto to fiat. Requires accountId, amount, chain, and tokenAddress (the on-chain contract address, e.g. 0xaf88d065e77c8cC2239327C5EDb3A432268e5831 for USDC on Arbitrum). Do NOT pass a token symbol — it must be the contract address.
 
 After creating a quote, check the \`fulfillment\` field:
 - \`send_to_address\`: Send the exact \`input.amount\` of \`input.token\` to the \`sendTo.address\` before \`sendTo.expiresAt\`.
 - \`sign_transaction\`: Call \`get_off_ramp_transaction\` with the quote ID and sender address to get calldata or a serialized transaction, then sign and submit on-chain.
 
-Amount modes: set \`amountType\` to \`output\` (default) for exact fiat delivery, or \`input\` for exact crypto spend.`,
+Amount modes: set \`amountMode\` to \`output\` (default) for exact fiat delivery, or \`input\` for exact crypto spend.`,
     format: "json",
   },
 ];
