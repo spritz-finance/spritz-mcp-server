@@ -12,6 +12,8 @@ export interface ToolConfig {
   operationId: string;
   /** Override the spec's summary/description */
   description?: string;
+  /** Response format — CSV saves tokens on list responses, JSON for nested single objects */
+  format?: "csv" | "json";
 }
 
 export const EXPOSED_TOOLS: ToolConfig[] = [
@@ -24,6 +26,7 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     name: "create_bank_account",
     operationId: "postV1Bank-accounts",
     description: "Add a new bank account as an off-ramp destination. The `type` field determines required fields: us (routing_number, account_number), ca (institution_number, transit_number, account_number), uk (sort_code, account_number), iban (iban, optional bic).",
+    format: "json",
   },
   {
     name: "delete_bank_account",
@@ -39,5 +42,6 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     name: "create_off_ramp_quote",
     operationId: "postV1Off-ramp-quotes",
     description: "Create an off-ramp quote to convert crypto to fiat. Specify the destination accountId, amount, and blockchain chain. Returns a quote with exchange rate and fees.",
+    format: "json",
   },
 ];

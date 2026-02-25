@@ -1,5 +1,6 @@
 import { CallToolRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { SpritzClient } from "./client.js";
+import { formatCsv } from "./formatters.js";
 import type { ResolvedOperation } from "./spec.js";
 
 /**
@@ -51,8 +52,15 @@ export async function handleToolCall(
       Object.keys(bodyParams).length > 0 ? bodyParams : undefined,
     );
 
+    const text =
+      result === undefined || result === null
+        ? "OK"
+        : op.config.format === "json"
+          ? JSON.stringify(result, null, 2)
+          : formatCsv(result);
+
     return {
-      content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text" as const, text }],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

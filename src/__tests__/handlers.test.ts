@@ -202,13 +202,36 @@ describe("handleToolCall", () => {
     expect(client.request).toHaveBeenCalledWith("GET", "/v1/bank-accounts/", undefined);
   });
 
-  it("returns JSON-stringified result in content", async () => {
-    const data = { id: "ba_1", status: "active" };
+  it("formats response as CSV by default", async () => {
+    const data = [
+      { id: "ba_1", status: "active" },
+      { id: "ba_2", status: "pending" },
+    ];
     const client = makeClient(async () => data);
 
     const result = await handleToolCall(
       makeRequest("list_bank_accounts"),
       allOps,
+      client,
+    );
+
+    expect(result.content[0].text).toBe(
+      "id,status\nba_1,active\nba_2,pending",
+    );
+  });
+
+  it("formats response as JSON when config.format is 'json'", async () => {
+    const jsonOp: ResolvedOperation = {
+      ...createOp,
+      config: { ...createOp.config, format: "json" },
+    };
+
+    const data = { id: "pr_1", status: "created" };
+    const client = makeClient(async () => data);
+
+    const result = await handleToolCall(
+      makeRequest("create_payment"),
+      [jsonOp],
       client,
     );
 
