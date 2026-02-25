@@ -33,9 +33,7 @@ npm install && npm run build
 
 ### 1. Get Your API Key
 
-1. Log in to [app.spritz.finance](https://app.spritz.finance)
-2. Go to **Settings > API Keys**
-3. Create a new key
+Create one at [app.spritz.finance/api-keys](https://app.spritz.finance/api-keys).
 
 ### 2. Configure Your MCP Client
 
@@ -95,24 +93,24 @@ Add to `~/.cursor/mcp.json`:
 
 | Tool | Description |
 |------|-------------|
-| `list_bank_accounts` | List all bank accounts saved as off-ramp payment destinations |
-
-More tools coming soon.
+| `list_bank_accounts` | List saved bank accounts |
+| `create_bank_account` | Add a bank account (US, CA, UK, or IBAN) |
+| `delete_bank_account` | Remove a bank account |
+| `list_off_ramps` | List off-ramp transactions with optional filters |
+| `get_off_ramp_quote` | Get a quote by ID to check status or re-fetch details |
+| `create_off_ramp_quote` | Create a quote to convert crypto to fiat |
 
 ## Architecture
 
 Tools are driven by the OpenAPI spec — not hand-written. To expose a new endpoint, add one entry to `src/config.ts`:
 
 ```ts
-export const EXPOSED_TOOLS: ToolConfig[] = [
-  {
-    name: "list_bank_accounts",
-    operationId: "getV1Bank-accounts",
-    description: "List all bank accounts saved as off-ramp payment destinations.",
-  },
-  // To add a new tool, just add another entry here.
-  // The inputSchema, HTTP method, and path are all derived from the OpenAPI spec.
-];
+{
+  name: "list_bank_accounts",
+  operationId: "getV1Bank-accounts",
+  description: "List all bank accounts saved as off-ramp payment destinations.",
+},
+// Add more entries — inputSchema, HTTP method, and path are derived from the spec.
 ```
 
 The server reads `openapi.json`, finds each `operationId`, extracts the JSON Schema for parameters and request bodies, and registers them as MCP tools. A generic handler dispatches tool calls to the Spritz API.
@@ -122,7 +120,9 @@ openapi.json          → source of truth for request/response schemas
 src/config.ts         → which operations to expose (cherry-pick)
 src/spec.ts           → reads spec, builds MCP tool definitions
 src/handlers.ts       → generic dispatcher (path params, query, body)
-src/index.ts          → MCP server + API client
+src/formatters.ts     → CSV/JSON response formatting
+src/client.ts         → Spritz API HTTP client
+src/index.ts          → MCP server entrypoint
 ```
 
 ## Development

@@ -39,9 +39,21 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     description: "List off-ramp transactions. Filter by status, chain, or destination accountId. Supports cursor pagination.",
   },
   {
+    name: "get_off_ramp_quote",
+    operationId: "getV1Off-ramp-quotesByQuoteId",
+    description: "Get an off-ramp quote by ID. Use this to check quote status or re-fetch quote details.",
+    format: "json",
+  },
+  {
     name: "create_off_ramp_quote",
     operationId: "postV1Off-ramp-quotes",
-    description: "Create an off-ramp quote to convert crypto to fiat. Specify the destination accountId, amount, and blockchain chain. Returns a quote with exchange rate and fees.",
+    description: `Create an off-ramp quote to convert crypto to fiat. Returns a quote with locked exchange rate, fees, and next steps.
+
+After creating a quote, check the \`fulfillment\` field:
+- \`send_to_address\`: Send the exact \`input.amount\` of \`input.token\` to the \`sendTo.address\` before \`sendTo.expiresAt\`.
+- \`sign_transaction\`: A pre-built transaction is available via the build transaction endpoint — sign and broadcast it.
+
+Amount modes: set \`amountType\` to \`output\` (default) for exact fiat delivery, or \`input\` for exact crypto spend.`,
     format: "json",
   },
 ];
