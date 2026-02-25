@@ -97,8 +97,9 @@ Add to `~/.cursor/mcp.json`:
 | `create_bank_account` | Add a bank account (US, CA, UK, or IBAN) |
 | `delete_bank_account` | Remove a bank account |
 | `list_off_ramps` | List off-ramp transactions with optional filters |
-| `get_off_ramp_quote` | Get a quote by ID to check status or re-fetch details |
 | `create_off_ramp_quote` | Create a quote to convert crypto to fiat |
+| `get_off_ramp_quote` | Re-fetch a quote to check status |
+| `get_off_ramp_transaction` | Get transaction params (EVM calldata or Solana serialized tx) to sign and submit |
 
 ## Architecture
 

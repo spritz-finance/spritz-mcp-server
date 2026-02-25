@@ -45,13 +45,19 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     format: "json",
   },
   {
+    name: "get_off_ramp_transaction",
+    operationId: "postV1Off-ramp-quotesByQuoteIdTransaction",
+    description: "Get transaction params for a quote. Returns EVM calldata (contractAddress, calldata, value) or a serialized Solana transaction (transactionSerialized) depending on the chain. The agent must sign and submit the transaction on-chain.",
+    format: "json",
+  },
+  {
     name: "create_off_ramp_quote",
     operationId: "postV1Off-ramp-quotes",
     description: `Create an off-ramp quote to convert crypto to fiat. Returns a quote with locked exchange rate, fees, and next steps.
 
 After creating a quote, check the \`fulfillment\` field:
 - \`send_to_address\`: Send the exact \`input.amount\` of \`input.token\` to the \`sendTo.address\` before \`sendTo.expiresAt\`.
-- \`sign_transaction\`: A pre-built transaction is available via the build transaction endpoint — sign and broadcast it.
+- \`sign_transaction\`: Call \`get_off_ramp_transaction\` with the quote ID and sender address to get calldata or a serialized transaction, then sign and submit on-chain.
 
 Amount modes: set \`amountType\` to \`output\` (default) for exact fiat delivery, or \`input\` for exact crypto spend.`,
     format: "json",
