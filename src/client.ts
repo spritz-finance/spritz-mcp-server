@@ -56,6 +56,7 @@ export class SpritzClient {
       );
     }
 
+    if (response.status === 204) return undefined;
     return response.json();
   }
 }
