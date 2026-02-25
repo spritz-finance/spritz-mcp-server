@@ -30,4 +30,14 @@ export const EXPOSED_TOOLS: ToolConfig[] = [
     operationId: "deleteV1Bank-accountsByAccountId",
     description: "Delete a bank account by ID.",
   },
+  {
+    name: "list_off_ramps",
+    operationId: "getV1Off-ramps",
+    description: "List off-ramp transactions. Filter by status, chain, or destination accountId. Supports cursor pagination.",
+  },
+  {
+    name: "create_off_ramp_quote",
+    operationId: "postV1Off-ramp-quotes",
+    description: "Create an off-ramp quote to convert crypto to fiat. Specify the destination accountId, amount, and blockchain chain. Returns a quote with exchange rate and fees.",
+  },
 ];
