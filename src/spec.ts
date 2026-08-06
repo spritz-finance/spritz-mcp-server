@@ -224,5 +224,6 @@ export function toMcpTools(operations: ResolvedOperation[]) {
     name: op.config.name,
     description: op.config.description ?? op.summary,
     inputSchema: op.inputSchema,
+    ...(op.config.annotations ? { annotations: op.config.annotations } : {}),
   }));
 }

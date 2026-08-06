@@ -22,6 +22,18 @@ export async function handleToolCall(
     };
   }
 
+  if (op.method !== "get") {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: "Error: Mutating Spritz MCP tools are disabled until the server can verify a short-lived, action-bound human approval grant.",
+        },
+      ],
+      isError: true,
+    };
+  }
+
   try {
     // Substitute path parameters, e.g. /v1/bank-accounts/{accountId}
     let path = op.path;

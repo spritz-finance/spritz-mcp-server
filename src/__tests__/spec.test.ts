@@ -10,6 +10,7 @@ import {
 } from "../spec.js";
 import type { OpenAPIOperation } from "../spec.js";
 import type { ToolConfig } from "../config.js";
+import { EXPOSED_TOOLS } from "../config.js";
 
 // ============================================================================
 // Helpers
@@ -473,6 +474,7 @@ describe("toMcpTools", () => {
           name: "list_things",
           operationId: "listThings",
           description: "Custom desc",
+          annotations: { readOnlyHint: true, destructiveHint: false },
         },
         summary: "Spec summary",
       },
@@ -485,6 +487,7 @@ describe("toMcpTools", () => {
         name: "list_things",
         description: "Custom desc",
         inputSchema: { type: "object", properties: {}, required: [] },
+        annotations: { readOnlyHint: true, destructiveHint: false },
       },
     ]);
   });
@@ -535,5 +538,21 @@ describe("loadSpec", () => {
     const spec = loadSpecSafe();
     const index = indexOperations(spec);
     expect(index.size).toBeGreaterThan(0);
+  });
+
+  it("exposes only read-only GET operations until approval grants exist", () => {
+    const operations = resolveTools(loadSpecSafe(), EXPOSED_TOOLS);
+
+    expect(operations.map((operation) => operation.config.name)).toEqual([
+      "list_bank_accounts",
+      "list_off_ramps",
+      "get_off_ramp_quote",
+    ]);
+    expect(operations.every((operation) => operation.method === "get")).toBe(true);
+    expect(
+      operations.every(
+        (operation) => operation.config.annotations?.readOnlyHint === true,
+      ),
+    ).toBe(true);
   });
 });
