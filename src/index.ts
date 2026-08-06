@@ -49,8 +49,8 @@ async function main() {
   await server.connect(transport);
   console.error(
     credential.source === "spritz-cli"
-      ? "Spritz MCP Server is running via stdio with the Spritz CLI credential broker"
-      : "Spritz MCP Server is running via stdio with an explicitly injected environment credential",
+      ? `Spritz MCP Server is running via stdio for an End User ${credential.environment} account through the Spritz CLI credential broker`
+      : `Spritz MCP Server is running via stdio for an End User ${credential.environment} account with an explicitly injected environment credential`,
   );
 }
 

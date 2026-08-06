@@ -13,8 +13,7 @@ export class SpritzClient {
 
   constructor(credential: ResolvedCredential = resolveCredential()) {
     this.apiKey = credential.apiKey;
-    this.baseUrl =
-      process.env.SPRITZ_API_BASE_URL || "https://platform.spritz.finance";
+    this.baseUrl = credential.baseUrl;
     this.sessionId = randomUUID();
     this.sessionCreatedAt = Date.now();
   }

@@ -29,7 +29,6 @@ describe("SpritzClient", () => {
 
   beforeEach(() => {
     process.env.SPRITZ_API_KEY = "test-api-key";
-    process.env.SPRITZ_API_BASE_URL = "https://test.spritz.finance";
   });
 
   afterEach(() => {
@@ -147,7 +146,7 @@ describe("SpritzClient", () => {
     const result = await client.request("GET", "/v1/bank-accounts/");
 
     const [url, opts] = fetch.mock.calls[0];
-    expect(url).toBe("https://test.spritz.finance/v1/bank-accounts/");
+    expect(url).toBe("https://platform.spritz.finance/v1/bank-accounts/");
     expect(opts.method).toBe("GET");
     expect(opts.body).toBeUndefined();
     expect(result).toEqual([{ id: "ba_1" }]);

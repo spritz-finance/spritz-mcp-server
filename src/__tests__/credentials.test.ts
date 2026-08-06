@@ -1,67 +1,134 @@
 import { describe, expect, it } from "vitest";
-import { resolveCredential } from "../credentials.js";
+import {
+  resolveCredential,
+  resolveOfficialEndUserEndpoint,
+} from "../credentials.js";
 
 describe("resolveCredential", () => {
-  it("prefers a credential injected by the Spritz CLI broker", () => {
+  it("accepts a validated End User credential injected by the CLI broker", () => {
     expect(
       resolveCredential({
-        SPRITZ_API_KEY: "ak_broker",
+        SPRITZ_API_KEY: "sk_live_broker",
         SPRITZ_CREDENTIAL_BROKER: "spritz-cli",
         SPRITZ_CREDENTIAL_STORAGE: "system keychain",
-        SPRITZ_CREDENTIAL_ACCESS: "developer",
-        SPRITZ_CREDENTIAL_WORKSPACE_ID: "ws_test",
-        SPRITZ_CREDENTIAL_ENVIRONMENT: "sandbox",
+        SPRITZ_CREDENTIAL_ACCESS: "user",
+        SPRITZ_CREDENTIAL_ENVIRONMENT: "production",
+        SPRITZ_CREDENTIAL_API_BASE_URL:
+          "https://platform.spritz.finance",
       }),
     ).toEqual({
-      apiKey: "ak_broker",
+      apiKey: "sk_live_broker",
       source: "spritz-cli",
+      access: "user",
       storage: "system keychain",
-      access: "developer",
-      workspaceId: "ws_test",
-      environment: "sandbox",
+      environment: "production",
+      baseUrl: "https://platform.spritz.finance",
     });
   });
 
-  it("allows an explicit environment credential for secret-managed CI", () => {
-    expect(resolveCredential({ SPRITZ_API_KEY: "ak_ci" })).toEqual({
-      apiKey: "ak_ci",
+  it("derives Sandbox for an explicit secret-managed CI credential", () => {
+    expect(
+      resolveCredential({
+        SPRITZ_API_KEY: "sk_test_ci",
+        SPRITZ_API_BASE_URL: "https://sandbox.spritz.finance",
+      }),
+    ).toEqual({
+      apiKey: "sk_test_ci",
       source: "explicit-environment",
+      access: "user",
+      environment: "sandbox",
+      baseUrl: "https://sandbox.spritz.finance",
     });
   });
 
-  it("fails with broker guidance instead of reading a file", () => {
+  it("defaults an explicit CI credential to the production End User API", () => {
+    expect(resolveCredential({ SPRITZ_API_KEY: "sk_live_ci" })).toEqual({
+      apiKey: "sk_live_ci",
+      source: "explicit-environment",
+      access: "user",
+      environment: "production",
+      baseUrl: "https://platform.spritz.finance",
+    });
+  });
+
+  it("fails with End User broker guidance instead of reading a file", () => {
     expect(() => resolveCredential({})).toThrow(
-      "spritz auth mcp",
+      "spritz auth mcp --access user",
     );
   });
 
   it("rejects an unknown credential broker", () => {
     expect(() =>
       resolveCredential({
-        SPRITZ_API_KEY: "ak_test",
+        SPRITZ_API_KEY: "sk_live_test",
         SPRITZ_CREDENTIAL_BROKER: "arbitrary-command",
       }),
     ).toThrow("Unsupported SPRITZ_CREDENTIAL_BROKER");
   });
 
-  it("rejects a user-account credential from the CLI broker", () => {
+  it("rejects a Developer workspace credential on the End User tool surface", () => {
     expect(() =>
       resolveCredential({
-        SPRITZ_API_KEY: "ak_user",
-        SPRITZ_CREDENTIAL_BROKER: "spritz-cli",
-        SPRITZ_CREDENTIAL_ACCESS: "user",
-      }),
-    ).toThrow("End User/user-account key cannot authorize agent tooling");
-  });
-
-  it("rejects Developer Access metadata without a workspace", () => {
-    expect(() =>
-      resolveCredential({
-        SPRITZ_API_KEY: "ak_developer",
+        SPRITZ_API_KEY: "not-a-bearer-contract",
         SPRITZ_CREDENTIAL_BROKER: "spritz-cli",
         SPRITZ_CREDENTIAL_ACCESS: "developer",
         SPRITZ_CREDENTIAL_ENVIRONMENT: "sandbox",
+        SPRITZ_CREDENTIAL_API_BASE_URL:
+          "https://sandbox.spritz.finance",
       }),
-    ).toThrow("omitted the Developer Access workspace ID");
+    ).toThrow("separate HMAC/scoped grant and tool contract");
+  });
+
+  it("rejects broker metadata without a broker attestation", () => {
+    expect(() =>
+      resolveCredential({
+        SPRITZ_API_KEY: "sk_live_test",
+        SPRITZ_CREDENTIAL_ACCESS: "user",
+      }),
+    ).toThrow("metadata was provided without");
+  });
+
+  it("rejects inconsistent broker environment and API origin metadata", () => {
+    expect(() =>
+      resolveCredential({
+        SPRITZ_API_KEY: "sk_live_test",
+        SPRITZ_CREDENTIAL_BROKER: "spritz-cli",
+        SPRITZ_CREDENTIAL_ACCESS: "user",
+        SPRITZ_CREDENTIAL_ENVIRONMENT: "sandbox",
+        SPRITZ_CREDENTIAL_API_BASE_URL:
+          "https://platform.spritz.finance",
+      }),
+    ).toThrow("inconsistent environment and API-origin metadata");
+  });
+});
+
+describe("resolveOfficialEndUserEndpoint", () => {
+  it.each([
+    [
+      "https://sandbox.spritz.finance/",
+      {
+        baseUrl: "https://sandbox.spritz.finance",
+        environment: "sandbox",
+      },
+    ],
+    [
+      "https://platform.spritz.finance",
+      {
+        baseUrl: "https://platform.spritz.finance",
+        environment: "production",
+      },
+    ],
+  ])("allows %s", (url, expected) => {
+    expect(resolveOfficialEndUserEndpoint(url)).toEqual(expected);
+  });
+
+  it.each([
+    "http://platform.spritz.finance",
+    "https://platform.spritz.finance.evil.example",
+    "https://platform.spritz.finance/v1",
+    "https://user@platform.spritz.finance",
+    "https://platform.spritz.finance?next=https://evil.example",
+  ])("rejects redirectable origin %s", (url) => {
+    expect(() => resolveOfficialEndUserEndpoint(url)).toThrow();
   });
 });
