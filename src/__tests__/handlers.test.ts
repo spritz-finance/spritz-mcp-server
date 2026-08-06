@@ -145,19 +145,17 @@ describe("handleToolCall", () => {
     );
   });
 
-  it("sends POST args as JSON body", async () => {
+  it("fails closed before dispatching a mutating operation", async () => {
     const client = makeClient(async () => ({ id: "pr_1" }));
-    await handleToolCall(
+    const result = await handleToolCall(
       makeRequest("create_payment", { accountId: "ba_1", amount: "100.00" }),
       allOps,
       client,
     );
 
-    expect(client.request).toHaveBeenCalledWith(
-      "POST",
-      "/v1/payment-requests/",
-      { accountId: "ba_1", amount: "100.00" },
-    );
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("action-bound human approval grant");
+    expect(client.request).not.toHaveBeenCalled();
   });
 
   it("returns error response on API failure", async () => {
@@ -222,15 +220,15 @@ describe("handleToolCall", () => {
 
   it("formats response as JSON when config.format is 'json'", async () => {
     const jsonOp: ResolvedOperation = {
-      ...createOp,
-      config: { ...createOp.config, format: "json" },
+      ...getByIdOp,
+      config: { ...getByIdOp.config, format: "json" },
     };
 
     const data = { id: "pr_1", status: "created" };
     const client = makeClient(async () => data);
 
     const result = await handleToolCall(
-      makeRequest("create_payment"),
+      makeRequest("get_bank_account", { accountId: "ba_1" }),
       [jsonOp],
       client,
     );

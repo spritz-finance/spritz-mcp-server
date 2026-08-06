@@ -1,4 +1,4 @@
-export type CredentialSource = "spritz-cli" | "explicit-environment";
+export type CredentialSource = "explicit-environment";
 export type EndUserEnvironment = "sandbox" | "production";
 
 export interface ResolvedCredential {
@@ -7,7 +7,6 @@ export interface ResolvedCredential {
   access: "user";
   environment: EndUserEnvironment;
   baseUrl: string;
-  storage?: string;
 }
 
 const OFFICIAL_END_USER_ENDPOINTS: Record<string, EndUserEnvironment> = {
@@ -55,9 +54,9 @@ export function resolveOfficialEndUserEndpoint(rawUrl: string): {
  * Resolve an End User account Bearer credential only.
  *
  * The server intentionally does not load .env files, arbitrary credential
- * commands, or legacy plaintext key files. Local interactive use starts the
- * process through `spritz auth mcp --access user`; secret-managed CI may inject
- * an End User SPRITZ_API_KEY explicitly.
+ * commands, or legacy plaintext key files. Until an integrity-verifiable CLI
+ * broker ships, an operator may inject an End User SPRITZ_API_KEY only into a
+ * disposable Sandbox/test process.
  */
 export function resolveCredential(
   env: NodeJS.ProcessEnv = process.env,
@@ -65,46 +64,15 @@ export function resolveCredential(
   const apiKey = env.SPRITZ_API_KEY?.trim();
   if (!apiKey) {
     throw new Error(
-      "No Spritz End User credential was injected. After the account owner approves device access, start with `spritz auth mcp --access user`; CI may inject SPRITZ_API_KEY from a secret manager.",
+      "No Spritz End User credential was injected. Use an operator-controlled disposable Sandbox/test credential; the current `spritz auth mcp` broker is fail-closed.",
     );
   }
 
   const broker = env.SPRITZ_CREDENTIAL_BROKER;
-  if (broker && broker !== "spritz-cli") {
-    throw new Error(`Unsupported SPRITZ_CREDENTIAL_BROKER: ${broker}`);
-  }
-
-  if (broker === "spritz-cli") {
-    if (env.SPRITZ_CREDENTIAL_ACCESS === "developer") {
-      throw new Error(
-        "This MCP tool surface acts on an End User account. Developer workspace-agent access requires a separate HMAC/scoped grant and tool contract and remains disabled.",
-      );
-    }
-    if (env.SPRITZ_CREDENTIAL_ACCESS !== "user") {
-      throw new Error("The Spritz CLI broker omitted the End User access principal.");
-    }
-    if (!env.SPRITZ_CREDENTIAL_API_BASE_URL) {
-      throw new Error("The Spritz CLI broker omitted the attested API origin.");
-    }
-
-    const endpoint = resolveOfficialEndUserEndpoint(
-      env.SPRITZ_CREDENTIAL_API_BASE_URL,
+  if (broker) {
+    throw new Error(
+      "CLI broker metadata is not accepted until Spritz ships an integrity-verifiable packaged broker.",
     );
-    if (env.SPRITZ_CREDENTIAL_ENVIRONMENT !== endpoint.environment) {
-      throw new Error(
-        "The Spritz CLI broker supplied inconsistent environment and API-origin metadata.",
-      );
-    }
-
-    return {
-      apiKey,
-      source: "spritz-cli",
-      access: "user",
-      ...endpoint,
-      ...(env.SPRITZ_CREDENTIAL_STORAGE
-        ? { storage: env.SPRITZ_CREDENTIAL_STORAGE }
-        : {}),
-    };
   }
 
   const strayBrokerMetadata = Object.keys(env).some((name) =>
@@ -112,16 +80,21 @@ export function resolveCredential(
   );
   if (strayBrokerMetadata) {
     throw new Error(
-      "Spritz broker metadata was provided without SPRITZ_CREDENTIAL_BROKER=spritz-cli.",
+      "Spritz broker metadata is not accepted by this release.",
     );
   }
 
   if (!env.SPRITZ_API_BASE_URL) {
     throw new Error(
-      "SPRITZ_API_BASE_URL is required with an explicitly injected credential; choose the exact Sandbox or Production origin deliberately.",
+      "SPRITZ_API_BASE_URL is required with an explicitly injected credential; use the exact Sandbox origin for this interim path.",
     );
   }
   const endpoint = resolveOfficialEndUserEndpoint(env.SPRITZ_API_BASE_URL);
+  if (endpoint.environment !== "sandbox") {
+    throw new Error(
+      "Direct credential injection is limited to a disposable Sandbox/test End User account until an integrity-verifiable broker ships.",
+    );
+  }
   return {
     apiKey,
     source: "explicit-environment",
