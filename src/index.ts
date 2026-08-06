@@ -6,24 +6,22 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import dotenv from "dotenv";
 import { EXPOSED_TOOLS } from "./config.js";
 import { loadSpec, resolveTools, toMcpTools } from "./spec.js";
 import { handleToolCall } from "./handlers.js";
 import { SpritzClient } from "./client.js";
-
-dotenv.config();
+import { resolveCredential } from "./credentials.js";
 
 // ============================================================================
 // Server
 // ============================================================================
 
 async function main() {
-  if (!process.env.SPRITZ_API_KEY) {
-    console.error("Missing SPRITZ_API_KEY in environment variables.");
-    console.error(
-      "Create a .env file based on .env.example with your Spritz API key.",
-    );
+  let credential;
+  try {
+    credential = resolveCredential();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 
@@ -32,7 +30,7 @@ async function main() {
   const operations = resolveTools(spec, EXPOSED_TOOLS);
   const mcpTools = toMcpTools(operations);
 
-  const client = new SpritzClient();
+  const client = new SpritzClient(credential);
 
   const server = new Server(
     { name: "spritz-mcp-server", version: "0.1.0" },
@@ -49,7 +47,11 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Spritz MCP Server is running via stdio");
+  console.error(
+    credential.source === "spritz-cli"
+      ? "Spritz MCP Server is running via stdio with the Spritz CLI credential broker"
+      : "Spritz MCP Server is running via stdio with an explicitly injected environment credential",
+  );
 }
 
 main().catch((error) => {

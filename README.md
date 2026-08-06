@@ -1,144 +1,136 @@
 # Spritz MCP Server
 
-MCP server for [Spritz](https://www.spritz.finance) fiat rails — let AI agents off-ramp crypto to bank accounts.
+MCP tools for Spritz fiat rails. The server exposes a reviewed subset of the
+Spritz API from the bundled OpenAPI specification.
 
-## What This Does
-
-An MCP (Model Context Protocol) server that gives AI agents tools to interact with the Spritz API. Tools are derived from the [OpenAPI spec](https://sandbox.spritz.finance/openapi/json) — no hand-written schemas.
-
-## Installation
-
-### npx (recommended)
+## Install
 
 ```bash
-npx @spritz-finance/mcp-server
+npx -y @spritz-finance/mcp-server
 ```
 
-### Global install
+Node.js 18 or newer is required.
+
+## Human-approved agent access
+
+An AI agent must not accept Developer Terms, perform business verification, or
+own a Production credential. A human administrator enrolls the legal entity in
+[Developer Access](https://console.spritz.finance) for **Sandbox** or requests
+**Live Test**, then approves a scoped, expiring device grant. **Production** is
+a separate commercial service with its own verification, agreements, and
+credentials.
+
+For local agent tools, keep the key in the Spritz CLI's system-keychain storage
+and launch the MCP server through its credential broker:
 
 ```bash
-npm install -g @spritz-finance/mcp-server
-spritz-mcp-server
+spritz auth device start --access developer
+# A human opens the returned URL and approves the requested scopes.
+spritz auth device complete
+spritz auth mcp
 ```
 
-### From source
+The deployed device flow currently authorizes a Spritz **user account** at
+`app.spritz.finance`; it is not yet a Developer Access workspace grant. The
+workspace mode therefore fails closed until the platform contract is deployed.
+`spritz auth mcp` also requires metadata proving the workspace and Sandbox,
+Live Test, or Production environment. Never work around either response by
+giving an agent a user key or a raw Production key.
 
-```bash
-git clone https://github.com/spritz-finance/spritz-mcp-server.git
-cd spritz-mcp-server
-npm install && npm run build
-```
+The MCP server deliberately does not load `.env`, `~/.config/spritz/api_key`,
+arbitrary credential commands, or other plaintext files. The broker injects the
+credential and workspace metadata only into the fixed MCP child process
+environment. A secret manager may inject
+`SPRITZ_API_KEY` directly for CI as an explicit fallback.
 
-## Configuration
+## MCP client configuration
 
-### 1. Get Your API Key
+Use the broker command in local MCP clients.
 
-Create one at [app.spritz.finance/api-keys](https://app.spritz.finance/api-keys).
-
-### 2. Configure Your MCP Client
-
-#### Claude Desktop
-
-Add to `~/.config/claude/claude_desktop_config.json`:
+### Claude Desktop
 
 ```json
 {
   "mcpServers": {
     "spritz": {
-      "command": "npx",
-      "args": ["@spritz-finance/mcp-server"],
-      "env": {
-        "SPRITZ_API_KEY": "your-api-key"
-      }
+      "command": "spritz",
+      "args": ["auth", "mcp"]
     }
   }
 }
 ```
 
-#### Claude Code
-
-Add to your project's `.mcp.json`:
-
-```json
-{
-  "spritz": {
-    "command": "npx",
-    "args": ["@spritz-finance/mcp-server"],
-    "env": {
-      "SPRITZ_API_KEY": "your-api-key"
-    }
-  }
-}
-```
-
-#### Cursor
-
-Add to `~/.cursor/mcp.json`:
+### Claude Code
 
 ```json
 {
   "mcpServers": {
     "spritz": {
-      "command": "npx",
-      "args": ["@spritz-finance/mcp-server"],
-      "env": {
-        "SPRITZ_API_KEY": "your-api-key"
-      }
+      "command": "spritz",
+      "args": ["auth", "mcp"]
     }
   }
 }
 ```
 
-## Available Tools
+### OpenCode
+
+```json
+{
+  "mcp": {
+    "spritz": {
+      "type": "local",
+      "command": ["spritz", "auth", "mcp"]
+    }
+  }
+}
+```
+
+For secret-managed CI only:
+
+```bash
+SPRITZ_API_KEY="${CI_SECRET_VALUE}" npx -y @spritz-finance/mcp-server
+```
+
+Do not place a key in MCP JSON, argv, a repository `.env`, or a plaintext
+configuration file.
+
+## Tools
 
 | Tool | Description |
 |------|-------------|
-| `list_bank_accounts` | List saved bank accounts |
-| `create_bank_account` | Add a bank account (US, CA, UK, or IBAN) |
-| `delete_bank_account` | Remove a bank account |
-| `list_off_ramps` | List off-ramp transactions with optional filters |
-| `create_off_ramp_quote` | Create a quote to convert crypto to fiat |
-| `get_off_ramp_quote` | Re-fetch a quote to check status |
-| `get_off_ramp_transaction` | Get transaction params (EVM calldata or Solana serialized tx) to sign and submit |
+| `list_bank_accounts` | List approved bank destinations |
+| `create_bank_account` | Add a US, Canadian, UK, or IBAN destination |
+| `delete_bank_account` | Remove a bank destination |
+| `list_off_ramps` | List off-ramp transactions |
+| `create_off_ramp_quote` | Create a crypto-to-fiat quote |
+| `get_off_ramp_quote` | Check a quote |
+| `get_off_ramp_transaction` | Get transaction parameters to sign and submit |
+
+Agent callers must obtain explicit human confirmation before creating or
+deleting a bank account, creating a quote that may be funded, or signing and
+submitting an on-chain transaction.
 
 ## Architecture
 
-Tools are driven by the OpenAPI spec — not hand-written. To expose a new endpoint, add one entry to `src/config.ts`:
+`openapi.json` is the bundled schema. `src/config.ts` selects the reviewed
+operations; `src/spec.ts` derives MCP schemas; `src/handlers.ts` dispatches calls;
+and `src/client.ts` calls the platform API.
 
-```ts
-{
-  name: "list_bank_accounts",
-  operationId: "getV1Bank-accounts",
-  description: "List all bank accounts saved as off-ramp payment destinations.",
-},
-// Add more entries — inputSchema, HTTP method, and path are derived from the spec.
-```
+Refresh the spec only through a reviewed change:
 
-The server reads `openapi.json`, finds each `operationId`, extracts the JSON Schema for parameters and request bodies, and registers them as MCP tools. A generic handler dispatches tool calls to the Spritz API.
-
-```
-openapi.json          → source of truth for request/response schemas
-src/config.ts         → which operations to expose (cherry-pick)
-src/spec.ts           → reads spec, builds MCP tool definitions
-src/handlers.ts       → generic dispatcher (path params, query, body)
-src/formatters.ts     → CSV/JSON response formatting
-src/client.ts         → Spritz API HTTP client
-src/index.ts          → MCP server entrypoint
+```bash
+curl -s https://sandbox.spritz.finance/openapi/json > openapi.json
+npm test
+npm run build
 ```
 
 ## Development
 
 ```bash
 npm install
-npm run dev          # Watch mode
-npm run build        # Build
-npm run inspector    # MCP inspector
-```
-
-### Updating the OpenAPI spec
-
-```bash
-curl -s https://sandbox.spritz.finance/openapi/json > openapi.json
+npm test
+npm run build
 ```
 
 ## License

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { resolveCredential, type ResolvedCredential } from "./credentials.js";
 
 const USER_AGENT = "spritz-mcp-server/0.1.0";
 const ORIGIN = "https://mcp.spritz.finance";
@@ -10,16 +11,12 @@ export class SpritzClient {
   private sessionId: string;
   private sessionCreatedAt: number;
 
-  constructor() {
-    this.apiKey = process.env.SPRITZ_API_KEY || "";
+  constructor(credential: ResolvedCredential = resolveCredential()) {
+    this.apiKey = credential.apiKey;
     this.baseUrl =
       process.env.SPRITZ_API_BASE_URL || "https://platform.spritz.finance";
     this.sessionId = randomUUID();
     this.sessionCreatedAt = Date.now();
-
-    if (!this.apiKey) {
-      throw new Error("SPRITZ_API_KEY must be set in environment variables");
-    }
   }
 
   private getSessionId(): string {

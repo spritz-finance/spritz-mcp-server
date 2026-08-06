@@ -37,14 +37,14 @@ describe("SpritzClient", () => {
     process.env = { ...originalEnv };
   });
 
-  it("throws if SPRITZ_API_KEY is missing", () => {
+  it("throws with broker guidance if SPRITZ_API_KEY is missing", () => {
     delete process.env.SPRITZ_API_KEY;
-    expect(() => new SpritzClient()).toThrow("SPRITZ_API_KEY must be set");
+    expect(() => new SpritzClient()).toThrow("spritz auth mcp");
   });
 
   it("throws if SPRITZ_API_KEY is empty string", () => {
     process.env.SPRITZ_API_KEY = "";
-    expect(() => new SpritzClient()).toThrow("SPRITZ_API_KEY must be set");
+    expect(() => new SpritzClient()).toThrow("spritz auth mcp");
   });
 
   it("sets Authorization header with Bearer token", async () => {
