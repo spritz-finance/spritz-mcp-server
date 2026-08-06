@@ -29,6 +29,7 @@ describe("SpritzClient", () => {
 
   beforeEach(() => {
     process.env.SPRITZ_API_KEY = "test-api-key";
+    process.env.SPRITZ_API_BASE_URL = "https://sandbox.spritz.finance";
   });
 
   afterEach(() => {
@@ -76,7 +77,7 @@ describe("SpritzClient", () => {
     await client.request("GET", "/v1/test");
 
     const [, opts] = fetch.mock.calls[0];
-    expect(opts.headers["User-Agent"]).toMatch(/^spritz-mcp-server\//);
+    expect(opts.headers["User-Agent"]).toBe("spritz-mcp-server/0.3.2");
   });
 
   it("sets Origin header", async () => {
@@ -146,8 +147,9 @@ describe("SpritzClient", () => {
     const result = await client.request("GET", "/v1/bank-accounts/");
 
     const [url, opts] = fetch.mock.calls[0];
-    expect(url).toBe("https://platform.spritz.finance/v1/bank-accounts/");
+    expect(url).toBe("https://sandbox.spritz.finance/v1/bank-accounts/");
     expect(opts.method).toBe("GET");
+    expect(opts.redirect).toBe("error");
     expect(opts.body).toBeUndefined();
     expect(result).toEqual([{ id: "ba_1" }]);
   });
@@ -169,26 +171,19 @@ describe("SpritzClient", () => {
     );
   });
 
-  it("throws on non-OK response with status and body", async () => {
-    const fetch = mockFetch(401, "Unauthorized", "Unauthorized");
-    globalThis.fetch = fetch;
-
-    const client = new SpritzClient();
-
-    await expect(client.request("GET", "/v1/test")).rejects.toThrow(
-      /401 Unauthorized/,
+  it("throws on non-OK response without copying the response body", async () => {
+    const fetch = mockFetch(
+      401,
+      "sensitive upstream diagnostic: account 123456789",
+      "Unauthorized",
     );
-  });
-
-  it("uses default base URL when SPRITZ_API_BASE_URL not set", async () => {
-    delete process.env.SPRITZ_API_BASE_URL;
-    const fetch = mockFetch(200, {});
     globalThis.fetch = fetch;
 
     const client = new SpritzClient();
-    await client.request("GET", "/v1/test");
+    const error = await client.request("GET", "/v1/test").catch((reason) => reason);
 
-    const [url] = fetch.mock.calls[0];
-    expect(url).toBe("https://platform.spritz.finance/v1/test");
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/401 Unauthorized/);
+    expect((error as Error).message).not.toMatch(/account 123456789/);
   });
 });

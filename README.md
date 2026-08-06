@@ -10,7 +10,7 @@ disabled until those controls are implemented.
 ## Install
 
 ```bash
-npx -y @spritz-finance/mcp-server
+npx -y @spritz-finance/mcp-server@0.3.2
 ```
 
 Node.js 18 or newer is required.
@@ -25,8 +25,11 @@ own access.
 spritz auth device start --access user
 # The account owner opens the returned URL and approves the requested scopes.
 spritz auth device complete
-spritz auth mcp --access user
 ```
+
+Then configure the MCP client to launch `spritz auth mcp --access user` as the
+long-lived stdio server, as shown below. Do not run the broker as a one-time
+setup command; without an MCP client attached it waits for protocol messages.
 
 The CLI stores the End User Bearer credential in the system keychain and
 injects it only into this fixed MCP child process. The broker attests the access
@@ -37,10 +40,10 @@ The server deliberately does not load `.env`,
 `~/.config/spritz/api_key`, arbitrary credential commands, or other plaintext
 files. Never put a key in argv, MCP JSON, a repository, or logs.
 
-`spritz auth mcp --access developer` intentionally fails closed. Do not give
-this End User tool surface a Developer workspace key. A future workspace-agent
-surface must use the Developer API's HMAC/scoped authorization model and be
-reviewed independently.
+Do not give this End User tool surface a Developer workspace key. Developer
+integrations use one human-owned organization workspace and the Developer API's
+HMAC credential model; see the
+[Developer Access guide](https://docs.spritz.finance/guides/developer-access).
 
 ## MCP client configuration
 
@@ -73,12 +76,12 @@ Use the End User broker command in local MCP clients.
 ```
 
 For secret-managed CI only, an End User Bearer key may be injected directly.
-The optional base URL must be one of the exact official origins above:
+The base URL is required and must be one of the exact official origins above:
 
 ```bash
 SPRITZ_API_KEY="${CI_SECRET_VALUE}" \
 SPRITZ_API_BASE_URL="https://sandbox.spritz.finance" \
-npx -y @spritz-finance/mcp-server
+npx -y @spritz-finance/mcp-server@0.3.2
 ```
 
 ## Tools

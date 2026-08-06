@@ -473,6 +473,7 @@ describe("toMcpTools", () => {
           name: "list_things",
           operationId: "listThings",
           description: "Custom desc",
+          annotations: { readOnlyHint: true, destructiveHint: false },
         },
         summary: "Spec summary",
       },
@@ -485,6 +486,7 @@ describe("toMcpTools", () => {
         name: "list_things",
         description: "Custom desc",
         inputSchema: { type: "object", properties: {}, required: [] },
+        annotations: { readOnlyHint: true, destructiveHint: false },
       },
     ]);
   });

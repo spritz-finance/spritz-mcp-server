@@ -1,6 +1,6 @@
 {
   "name": "@spritz-finance/mcp-server",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "MCP server for Spritz fiat rails — off-ramp crypto to bank accounts with AI agents",
   "type": "module",
   "main": "build/src/index.js",

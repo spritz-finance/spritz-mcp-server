@@ -116,9 +116,12 @@ export function resolveCredential(
     );
   }
 
-  const endpoint = resolveOfficialEndUserEndpoint(
-    env.SPRITZ_API_BASE_URL ?? "https://platform.spritz.finance",
-  );
+  if (!env.SPRITZ_API_BASE_URL) {
+    throw new Error(
+      "SPRITZ_API_BASE_URL is required with an explicitly injected credential; choose the exact Sandbox or Production origin deliberately.",
+    );
+  }
+  const endpoint = resolveOfficialEndUserEndpoint(env.SPRITZ_API_BASE_URL);
   return {
     apiKey,
     source: "explicit-environment",

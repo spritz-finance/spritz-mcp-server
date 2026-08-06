@@ -41,14 +41,10 @@ describe("resolveCredential", () => {
     });
   });
 
-  it("defaults an explicit CI credential to the production End User API", () => {
-    expect(resolveCredential({ SPRITZ_API_KEY: "sk_live_ci" })).toEqual({
-      apiKey: "sk_live_ci",
-      source: "explicit-environment",
-      access: "user",
-      environment: "production",
-      baseUrl: "https://platform.spritz.finance",
-    });
+  it("requires an explicit API origin with a directly injected credential", () => {
+    expect(() => resolveCredential({ SPRITZ_API_KEY: "sk_live_ci" })).toThrow(
+      "SPRITZ_API_BASE_URL is required",
+    );
   });
 
   it("fails with End User broker guidance instead of reading a file", () => {

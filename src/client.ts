@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { resolveCredential, type ResolvedCredential } from "./credentials.js";
+import { SERVER_VERSION } from "./version.js";
 
-const USER_AGENT = "spritz-mcp-server/0.1.0";
+const USER_AGENT = `spritz-mcp-server/${SERVER_VERSION}`;
 const ORIGIN = "https://mcp.spritz.finance";
 const SESSION_TTL_MS = 15 * 60 * 1000;
 
@@ -35,6 +36,7 @@ export class SpritzClient {
 
     const response = await fetch(url, {
       method,
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
@@ -46,10 +48,9 @@ export class SpritzClient {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Spritz API error: ${response.status} ${response.statusText} - ${errorText}`,
-      );
+      // Do not copy an upstream response body into an agent-visible error. Problem
+      // details can contain customer-supplied values or provider diagnostics.
+      throw new Error(`Spritz API error: ${response.status} ${response.statusText}`);
     }
 
     if (response.status === 204) return undefined;

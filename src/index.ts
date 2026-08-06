@@ -11,6 +11,7 @@ import { loadSpec, resolveTools, toMcpTools } from "./spec.js";
 import { handleToolCall } from "./handlers.js";
 import { SpritzClient } from "./client.js";
 import { resolveCredential } from "./credentials.js";
+import { SERVER_VERSION } from "./version.js";
 
 // ============================================================================
 // Server
@@ -33,7 +34,7 @@ async function main() {
   const client = new SpritzClient(credential);
 
   const server = new Server(
-    { name: "spritz-mcp-server", version: "0.1.0" },
+    { name: "spritz-mcp-server", version: SERVER_VERSION },
     { capabilities: { tools: {} } },
   );
 
