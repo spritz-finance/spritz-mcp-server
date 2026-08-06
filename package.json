@@ -45,7 +45,7 @@
   "author": "Spritz Finance <support@spritz.finance> (https://spritz.finance)",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0"
+    "@modelcontextprotocol/sdk": "^1.30.0"
   },
   "devDependencies": {
     "@types/node": "^25.2.0",
